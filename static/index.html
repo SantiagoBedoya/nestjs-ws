@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Websockets client</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
+    <!-- <script src="/socket.io/socket.io.js"></script> -->
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+    <div id="v-app">
+        <main>
+            <section class="alerts">
+                <div v-for="alert of alerts" class="alert alert-success">{{ alert.message }}</div>
+            </section>
+
+            <section class="chat">
+                <h1>Websockets Tester</h1>
+                <form action="">
+                    <input v-model="text" type="text" class="form-control">
+                    <button type="submit" class="btn btn-info" @click.prevent="sendChatMessage()">send</button>
+                </form>
+                <div class="tab-row">
+                    <button class="btn" @click="activeRoom = 'general'" :class="{'btn-success': activeRoom === 'general'}">General</button>
+                    <button class="btn" @click="activeRoom = 'typescript'" :class="{'btn-success': activeRoom === 'typescript'}">TypeScript</button>
+                    <button class="btn" @click="activeRoom = 'nestjs'" :class="{'btn-success': activeRoom === 'nestjs'}">NestJS</button>
+                </div>
+                <div class="tab-row">
+                    Status: {{isMemberOfActiveRoom ? 'joined' : 'not joined'}} --- <button @click="toggleRoomMembership()">{{isMemberOfActiveRoom ? 'Leave' : 'Join'}}</button>
+                </div>
+                <p>
+                <ul>
+                    <li v-for="msg of messages[activeRoom]">
+                        <strong>{{msg.sender}}: </strong>{{msg.message}}
+                    </li>
+                </ul>
+                </p>
+            </section>
+        </main>
+    </div>
+    <script>
+        var app = new Vue({
+            el: "#v-app",
+            data: {
+                username: "",
+                text: "",
+                messages: {
+                    general: [],
+                    typescript: [],
+                    nestjs: []
+                },
+                rooms:  {
+                    general: false,
+                    typescript: false,
+                    nestjs: false
+                },
+                alerts: [],
+                socket: { chat: null, alerts: null },
+                activeRoom: "general",
+            },
+            computed: {
+                isMemberOfActiveRoom(){
+                    return this.rooms[this.activeRoom];
+                }
+            },
+            methods: {
+                sendChatMessage() {
+                    // Check is user is member of active room
+                    if(this.isMemberOfActiveRoom){
+                        this.socket.chat.emit("chatToServer", { sender: this.username, message: this.text, room: this.activeRoom });
+                        this.text = "";
+                    }else {
+                        alert("You must be a member of the active room to send messages!")
+                    }  
+                },
+                toggleRoomMembership(){
+                    if(this.isMemberOfActiveRoom){
+                        this.socket.chat.emit("leaveRoom", this.activeRoom)
+                        this.activeRoom = "";
+                    }else{
+                        this.socket.chat.emit("joinRoom", this.activeRoom)
+                    }
+                },
+                receiveChatMessage(msg) {
+                    this.messages[msg.room].push(msg);
+                },
+                receiveAlertMessage(msg) {
+                    this.alerts.push(msg);
+                },
+            },
+            created() {
+                this.username = prompt("Enter your username: ");
+                // this.socket = io("http://localhost:3001", {path: "/websockets"});
+                /**
+                 * namespace is different to path
+                 *                     host/<namespace>
+                */
+                this.socket.chat = io("http://localhost:3000/chat");
+                this.socket.chat.on("chatToClient", (msg) => {
+                    this.receiveChatMessage(msg);
+                });
+
+                this.socket.chat.on("connect", () => {
+                    this.toggleRoomMembership()
+                })
+
+                this.socket.chat.on("joinedRoom", (room) => {
+                    this.rooms[room] = true;
+                })
+
+                this.socket.chat.on("leftRoom", (room) => {
+                    this.rooms[room] = false;
+                })
+
+                this.socket.alerts = io("http://localhost:3000/alert")
+                this.socket.alerts.on("alertToClient", (msg) => {
+                    this.receiveAlertMessage(msg);
+                });
+
+            }
+        });
+    </script>
+</body>
+
+</html>

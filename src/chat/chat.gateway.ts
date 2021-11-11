@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
-@WebSocketGateway({ namespace: "/chat" })
+@WebSocketGateway({ namespace: /^\/dynamic-\d+$/ })
 export class ChatGateway implements OnGatewayDisconnect, OnGatewayConnection, OnGatewayInit {
   private _logger: Logger = new Logger("ChatGateway");
   @WebSocketServer() wss: Server;

@@ -26,12 +26,16 @@
                     <button type="submit" class="btn btn-info" @click.prevent="sendChatMessage()">send</button>
                 </form>
                 <div class="tab-row">
-                    <button class="btn" @click="activeRoom = 'general'" :class="{'btn-success': activeRoom === 'general'}">General</button>
-                    <button class="btn" @click="activeRoom = 'typescript'" :class="{'btn-success': activeRoom === 'typescript'}">TypeScript</button>
-                    <button class="btn" @click="activeRoom = 'nestjs'" :class="{'btn-success': activeRoom === 'nestjs'}">NestJS</button>
+                    <button class="btn" @click="activeRoom = 'general'"
+                        :class="{'btn-success': activeRoom === 'general'}">General</button>
+                    <button class="btn" @click="activeRoom = 'typescript'"
+                        :class="{'btn-success': activeRoom === 'typescript'}">TypeScript</button>
+                    <button class="btn" @click="activeRoom = 'nestjs'"
+                        :class="{'btn-success': activeRoom === 'nestjs'}">NestJS</button>
                 </div>
                 <div class="tab-row">
-                    Status: {{isMemberOfActiveRoom ? 'joined' : 'not joined'}} --- <button @click="toggleRoomMembership()">{{isMemberOfActiveRoom ? 'Leave' : 'Join'}}</button>
+                    Status: {{isMemberOfActiveRoom ? 'joined' : 'not joined'}} --- <button
+                        @click="toggleRoomMembership()">{{isMemberOfActiveRoom ? 'Leave' : 'Join'}}</button>
                 </div>
                 <p>
                 <ul>
@@ -54,7 +58,7 @@
                     typescript: [],
                     nestjs: []
                 },
-                rooms:  {
+                rooms: {
                     general: false,
                     typescript: false,
                     nestjs: false
@@ -64,25 +68,25 @@
                 activeRoom: "general",
             },
             computed: {
-                isMemberOfActiveRoom(){
+                isMemberOfActiveRoom() {
                     return this.rooms[this.activeRoom];
                 }
             },
             methods: {
                 sendChatMessage() {
                     // Check is user is member of active room
-                    if(this.isMemberOfActiveRoom){
+                    if (this.isMemberOfActiveRoom) {
                         this.socket.chat.emit("chatToServer", { sender: this.username, message: this.text, room: this.activeRoom });
                         this.text = "";
-                    }else {
+                    } else {
                         alert("You must be a member of the active room to send messages!")
-                    }  
+                    }
                 },
-                toggleRoomMembership(){
-                    if(this.isMemberOfActiveRoom){
+                toggleRoomMembership() {
+                    if (this.isMemberOfActiveRoom) {
                         this.socket.chat.emit("leaveRoom", this.activeRoom)
                         this.activeRoom = "";
-                    }else{
+                    } else {
                         this.socket.chat.emit("joinRoom", this.activeRoom)
                     }
                 },
@@ -100,7 +104,10 @@
                  * namespace is different to path
                  *                     host/<namespace>
                 */
-                this.socket.chat = io("http://localhost:3000/chat");
+                const host = "http://localhost:3000";
+                const urlSearchParams = new URLSearchParams(window.location.search);
+                const params = Object.fromEntries(urlSearchParams.entries());
+                this.socket.chat = io(`${host}/${params.namespace}`);
                 this.socket.chat.on("chatToClient", (msg) => {
                     this.receiveChatMessage(msg);
                 });
@@ -117,10 +124,10 @@
                     this.rooms[room] = false;
                 })
 
-                this.socket.alerts = io("http://localhost:3000/alert")
-                this.socket.alerts.on("alertToClient", (msg) => {
-                    this.receiveAlertMessage(msg);
-                });
+                // this.socket.alerts = io(`${host}/${params.namespace}`)
+                // this.socket.alerts.on("alertToClient", (msg) => {
+                //     this.receiveAlertMessage(msg);
+                // });
 
             }
         });

@@ -20,7 +20,7 @@
             </section>
 
             <section class="chat">
-                <h1>Websockets Tester</h1>
+                <h1>Websockets Tester: {{username}}</h1>
                 <form action="">
                     <input v-model="text" type="text" class="form-control">
                     <button type="submit" class="btn btn-info" @click.prevent="sendChatMessage()">send</button>
@@ -64,7 +64,7 @@
                     nestjs: false
                 },
                 alerts: [],
-                socket: { chat: null, alerts: null },
+                socket: null,
                 activeRoom: "general",
             },
             computed: {
@@ -76,7 +76,7 @@
                 sendChatMessage() {
                     // Check is user is member of active room
                     if (this.isMemberOfActiveRoom) {
-                        this.socket.chat.emit("chatToServer", { sender: this.username, message: this.text, room: this.activeRoom });
+                        this.socket.emit("chatToServer", { sender: this.username, message: this.text, room: this.activeRoom });
                         this.text = "";
                     } else {
                         alert("You must be a member of the active room to send messages!")
@@ -84,10 +84,10 @@
                 },
                 toggleRoomMembership() {
                     if (this.isMemberOfActiveRoom) {
-                        this.socket.chat.emit("leaveRoom", this.activeRoom)
+                        this.socket.emit("leaveRoom", this.activeRoom)
                         this.activeRoom = "";
                     } else {
-                        this.socket.chat.emit("joinRoom", this.activeRoom)
+                        this.socket.emit("joinRoom", this.activeRoom)
                     }
                 },
                 receiveChatMessage(msg) {
@@ -107,20 +107,27 @@
                 const host = "http://localhost:3000";
                 const urlSearchParams = new URLSearchParams(window.location.search);
                 const params = Object.fromEntries(urlSearchParams.entries());
-                this.socket.chat = io(`${host}/${params.namespace}`);
-                this.socket.chat.on("chatToClient", (msg) => {
+
+                let dns = host;
+                if(params.ns){
+                    dns += `/${params.ns}`   
+                }
+                console.log({dns})
+                this.socket = io(dns);
+                this.socket.on("chatToClient", (msg) => {
+                    console.log(msg);
                     this.receiveChatMessage(msg);
                 });
 
-                this.socket.chat.on("connect", () => {
+                this.socket.on("connect", () => {
                     this.toggleRoomMembership()
                 })
 
-                this.socket.chat.on("joinedRoom", (room) => {
+                this.socket.on("joinedRoom", (room) => {
                     this.rooms[room] = true;
                 })
 
-                this.socket.chat.on("leftRoom", (room) => {
+                this.socket.on("leftRoom", (room) => {
                     this.rooms[room] = false;
                 })
 
